@@ -200,3 +200,84 @@ The policy contains two permission statements:
 * logs:PutLogEvents — Allows Lambda to write log entries, enabling execution activity to be monitored and audited.
 
 **Note:** The Resource field is set to "*" (all resources) for simplicity in this project. In a production environment, this should be scoped down to specific resource ARNs to further restrict access in accordance with the principle of least privilege.
+
+### Step 6: Creating the IAM Execution Role
+An IAM execution role was created for the Lambda function. The role establishes a trust relationship that allows the AWS Lambda service to assume it during function execution. The IAM policy created in the previous step was attached to this role, granting the function its operational permissions.
+
+<p align="center">
+  <img src="fig9.png.png" alt="Architecture Diagram" width="1000"/>
+</p>
+
+*Figure 9: IAM execution role creation for the Lambda function, with the custom EC2 policy attached.*
+
+### Step 7: Creating the Lambda Function
+The Lambda function serves as the automation engine. Named LambdaEC2StartStopFunction, the function is written in Python and uses the AWS SDK for Python (Boto3) to interact with the EC2 API.
+
+Key function configuration:
+* Runtime: Python 3.x
+* Execution role: The IAM role created in Step 6
+* Trigger: Amazon EventBridge (configured in Step 8)
+* Logging: Amazon CloudWatch Logs (enabled via the IAM policy)
+
+<p align="center">
+  <img src="fig10.png.png" alt="Architecture Diagram" width="1000"/>
+</p>
+
+*Figure 10: Lambda function deployment showing the function code in the AWS Console.*
+
+**Lambda Function Code**
+
+```python
+import os
+import boto3
+import logging
+
+DEFAULT_TAGS = os.environ.get("DEFAULT_TAGS", "tag:environment=UAT")
+
+logger = logging.getLogger()
+level = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
+logger.setLevel(level)
+
+ec2_resource = boto3.resource("ec2")
+ec2_client  = boto3.client("ec2")
+
+def lambda_handler(event, context):
+    raw_tags = event.get("tags") or DEFAULT_TAGS
+    if not raw_tags:
+        logger.error("No tags provided.")
+        return {"status": "error", "message": "No tags provided."}
+
+    tags      = get_tags(raw_tags)
+    instances = get_instances_by_tags(tags)
+
+    if not instances:
+        logger.warning("No instances found with these tags.")
+        return {"status": "warning", "message": "No instances found."}
+
+    action = event.get("action")
+    if action == "start":
+        ec2_client.start_instances(InstanceIds=instances)
+        logger.info("Starting instances: %s", instances)
+        return {"status": "success", "action": "start", "instances": instances}
+    elif action == "stop":
+        ec2_client.stop_instances(InstanceIds=instances)
+        logger.info("Stopping instances: %s", instances)
+        return {"status": "success", "action": "stop", "instances": instances}
+    else:
+        logger.warning("Invalid action. Use \"start\" or \"stop\".")
+        return {"status": "error", "message": "Invalid action."}
+
+def get_tags(tags):
+    return [{"Name": v[0], "Values": [v[1]]}
+            for t in tags.split(",") for v in [t.split("=")]]
+
+def get_instances_by_tags(tags):
+    response = ec2_resource.instances.filter(Filters=tags)
+    return [i.id for i in response]
+```
+
+
+
+
+
+
