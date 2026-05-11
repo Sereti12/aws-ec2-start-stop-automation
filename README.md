@@ -185,6 +185,7 @@ An IAM policy was created to define the minimum permissions required for the Lam
 }
 ```
 **Policy Explanation**
+
 The policy contains two permission statements:
 
 **Statement 1 — EC2 Instance Management (Sid: VisualEditor0):**
