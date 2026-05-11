@@ -2,7 +2,7 @@
 ## Using AWS Lambda and Amazon EventBridge
 
 <p align="center">
-  <img src="Figure 1 Arch Diagram" alt="Architecture Diagram" width="1000"/>
+  <img src="Figure 1 Arch Diagram.png" alt="Architecture Diagram" width="1000"/>
 </p>
 
 This project demonstrates hands-on experience in automating the scheduled start and stop of Amazon EC2 instances. The instances are automatically started each morning before business hours begin and stopped at the end of the working day. The primary objective is cost optimization: EC2 instances that run continuously outside of business hours incur unnecessary charges. By implementing automated scheduling, organizations can significantly reduce compute costs without requiring manual intervention from cloud engineers.
