@@ -275,6 +275,102 @@ def get_instances_by_tags(tags):
     response = ec2_resource.instances.filter(Filters=tags)
     return [i.id for i in response]
 ```
+**Code Walkthrough**
+
+The Lambda function is structured around two supporting functions and one main handler:
+
+* **lambda_handler(event, context):**
+
+This is the entry point invoked by EventBridge. It reads the incoming event payload to extract the target tags and the requested action ("start" or "stop"). It delegates instance discovery to get_instances_by_tags() and then calls the appropriate EC2 API. All significant events — including matched instances, actions taken, and error conditions — are logged for observability.
+
+* **get_tags(tags):**
+
+Parses the tag string (e.g., "tag:environment=UAT") into the AWS-compatible filter format required by the EC2 resource filter API. This enables the function to dynamically resolve tag specifications into structured filter objects.
+
+* **get_instances_by_tags(tags):**
+
+Queries the EC2 service for all instances matching the provided tag filters and returns a list of matching instance IDs. This list is then passed to the start or stop API call.
+The function also includes input validation guards that return structured error responses when required inputs — such as tags or a valid action — are missing or invalid. This makes the function more robust and easier to debug.
+
+### Step 7b: Configuring Lambda Environment Variables
+Environment variables were configured on the Lambda function to externalize key configuration values, keeping the function code generic and reusable across environments without requiring code changes.
+
+The following environment variables were defined:
+* DEFAULT_TAGS — Specifies the default tag filter used to identify target instances (e.g., tag:environment=UAT). This value can be overridden per invocation via the EventBridge event payload.
+* LOG_LEVEL — Controls the verbosity of function logging (e.g., INFO, DEBUG). Setting this externally allows log detail to be adjusted without redeploying the function.
+
+  <p align="center">
+  <img src="fig11.png.png" alt="Architecture Diagram" width="1000"/>
+</p>
+
+*Figure 11: Lambda environment variables configured for the function, showing DEFAULT_TAGS and LOG_LEVEL.*
+
+**Start Schedule — Cron Expression**
+The following cron expression triggers the start action at 08:00 UTC, Monday through Friday:
+
+`cron(0 8 ? * MON-FRI *)`
+
+| Field         | Value                  |
+|----------------|------------------------|
+| Minutes        | 0                      |
+| Hours          | 8 (08:00 UTC)          |
+| Day of month   | ? (any)                |
+| Month          | * (every month)        |
+| Day of week    | MON-FRI (weekdays only)|
+| Year           | * (every year)         |
+
+### Stop Schedule — Cron Expression
+
+The following cron expression triggers the stop action at 18:00 UTC, Monday through Friday:
+
+`cron(0 18 ? * MON-FRI *)`
+
+| Field         | Value                   |
+|----------------|-------------------------|
+| Minutes        | 0                       |
+| Hours          | 18 (18:00 UTC)          |
+| Day of month   | ? (any)                 |
+| Month          | * (every month)         |
+| Day of week    | MON-FRI (weekdays only) |
+| Year           | * (every year)          |
+
+<p align="center">
+  <img src="fig12.png.png" alt="Architecture Diagram" width="1000"/>
+</p>
+
+*Figure 12: EventBridge cron expression for the stop schedule. A corresponding rule with identical configuration but a different hour value is used for the start schedule.*
+
+## EventBridge Target Payloads
+Each EventBridge schedule is configured with a JSON input payload that instructs the Lambda function which action to perform. The payloads are as follows:
+
+
+**Start payload:**
+```json
+{ "action": "start" }
+```
+**Stop payload:**
+```json
+{ "action": "stop" }
+```
+These lightweight payloads are passed directly into the lambda_handler event parameter, allowing the same Lambda function to handle both start and stop operations based solely on the value of the "action" key.
+
+## 5. Validation and Results
+To validate the solution without waiting until the scheduled business-hours window, an additional EventBridge rule was created with a stop trigger set to fire a few minutes after the project was completed (17:20 UTC). This allowed immediate end-to-end verification of the automation workflow.
+
+The EC2 instances transitioned from a running state to a stopped state at exactly the configured time, confirming that:
+* The EventBridge schedule fired at the correct time.
+* The Lambda function was successfully invoked.
+* The tag filter correctly identified the target instances.
+* The stop API call executed successfully on all tagged instances.
+
+  <p align="center">
+  <img src="fig13.png.png" alt="Architecture Diagram" width="1000"/>
+</p>
+
+*Figure 13: EC2 console showing both instances in the "stopped" state following the execution of the Lambda stop function.*
+
+
+
 
 
 
