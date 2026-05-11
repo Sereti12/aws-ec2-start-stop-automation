@@ -340,7 +340,7 @@ The following cron expression triggers the stop action at 18:00 UTC, Monday thro
 
 *Figure 12: EventBridge cron expression for the stop schedule. A corresponding rule with identical configuration but a different hour value is used for the start schedule.*
 
-## EventBridge Target Payloads
+**EventBridge Target Payloads**
 Each EventBridge schedule is configured with a JSON input payload that instructs the Lambda function which action to perform. The payloads are as follows:
 
 
@@ -369,9 +369,51 @@ The EC2 instances transitioned from a running state to a stopped state at exactl
 
 *Figure 13: EC2 console showing both instances in the "stopped" state following the execution of the Lambda stop function.*
 
+**CloudWatch Logs Verification**
+The Lambda execution was further validated through the CloudWatch Logs output. The logs confirm that at exactly 17:20 UTC, the function:
+* Received the EventBridge trigger with the "stop" action.
+* Resolved the "tag:environment=UAT" filter from the DEFAULT_TAGS environment variable.
+* Identified the matching EC2 instances by their tag.
+* Executed the stop API call and logged the targeted instance IDs.
 
+ <p align="center">
+  <img src="fig14.png.png" alt="Architecture Diagram" width="1000"/>
+</p>
 
+*Figure 14: CloudWatch Logs output from the Lambda execution, showing the timestamp, matched tag filter, and successful stop action at 17:20 UTC.*
+## 6. Skills and Competencies Demonstrated
+This project demonstrates practical, hands-on proficiency in the following AWS services and cloud engineering disciplines:
 
+### Networking
+*	Designing and configuring an Amazon VPC with a defined CIDR block.
+* Creating and configuring public subnets, including CIDR allocation and Availability Zone selection.
+* Deploying and attaching an Internet Gateway and configuring route tables for internet connectivity.
+* Associating route tables with subnets to complete public subnet configuration.
+### Security
+* Designing and applying IAM policies following the principle of least privilege.
+* Creating and configuring IAM execution roles with service trust policies.
+* Configuring security group rules with appropriate source restrictions (e.g., SSH limited to My IP).
+### Compute
+* Launching EC2 instances with appropriate AMIs, instance types, and network configurations.
+* Applying resource tags to EC2 instances for programmatic identification and management.
+## Serverless and Automation
+* Developing a Python-based AWS Lambda function using the Boto3 SDK.
+* Implementing environment variables in Lambda for configuration management.
+* Designing a tag-driven, reusable automation framework for EC2 lifecycle management.
+### Scheduling and Event-Driven Architecture
+* Creating fine-grained cron-based schedules using Amazon EventBridge.
+* Configuring EventBridge to pass structured JSON payloads to Lambda targets.
+* Building an event-driven automation pipeline with decoupled scheduling and execution layers.
+### Monitoring and Observability
+* Configuring Lambda to publish structured execution logs to Amazon CloudWatch Logs.
+* Using CloudWatch Logs to validate automation outcomes and troubleshoot execution.
+## 7. Key Lessons Learned
+* Proper VPC design is foundational. Deploying EC2 instances requires careful planning of IP addressing, subnetting, routing, and internet connectivity before any compute resources are launched.
+* Tags are a powerful resource management mechanism in AWS. Designing a consistent tagging strategy from the outset makes automation, cost allocation, and resource identification significantly easier.
+* The principle of least privilege is not just a security recommendation — it is an operational discipline. Scoping IAM policies to only the required actions and resources reduces the blast radius of any potential misconfiguration.
+* Serverless architectures eliminate operational overhead. Lambda and EventBridge together provide a highly reliable, low-maintenance automation platform that requires no server management.
+* Observability is essential. Configuring CloudWatch logging from the beginning enabled rapid validation and debugging of the automation workflow.
+* Cost awareness should inform architecture decisions. The choice between a NAT Gateway and a public subnet is a practical example of balancing security best practices against real-world cost constraints.
 
 
 
