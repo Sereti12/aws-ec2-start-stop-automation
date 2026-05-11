@@ -370,6 +370,7 @@ The EC2 instances transitioned from a running state to a stopped state at exactl
 *Figure 13: EC2 console showing both instances in the "stopped" state following the execution of the Lambda stop function.*
 
 **CloudWatch Logs Verification**
+
 The Lambda execution was further validated through the CloudWatch Logs output. The logs confirm that at exactly 17:20 UTC, the function:
 * Received the EventBridge trigger with the "stop" action.
 * Resolved the "tag:environment=UAT" filter from the DEFAULT_TAGS environment variable.
@@ -396,7 +397,7 @@ This project demonstrates practical, hands-on proficiency in the following AWS s
 ### Compute
 * Launching EC2 instances with appropriate AMIs, instance types, and network configurations.
 * Applying resource tags to EC2 instances for programmatic identification and management.
-## Serverless and Automation
+### Serverless and Automation
 * Developing a Python-based AWS Lambda function using the Boto3 SDK.
 * Implementing environment variables in Lambda for configuration management.
 * Designing a tag-driven, reusable automation framework for EC2 lifecycle management.
