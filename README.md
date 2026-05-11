@@ -60,7 +60,7 @@ An Amazon VPC was created with the following configuration:
 *	Name tag: UAT-VPC
 *	IPv4 CIDR block: 10.0.0.0/16
 The /16 CIDR block provides up to 65,536 IP addresses, offering sufficient address space for future growth.
-### 1.2  Creating the Subnet
+#### 1.2  Creating the Subnet
 A public subnet was created within the VPC using the following settings:
 * Subnet name: Public-Subnet-1
 * Availability Zone: Europe (Stockholm) — eu-north-1a
@@ -68,5 +68,134 @@ A public subnet was created within the VPC using the following settings:
 *	Subnet IPv4 CIDR block: 10.0.1.0/24
 The /24 subnet provides 256 IP addresses (251 usable), which is appropriate for this workload.
 
+<p align="center">
+  <img src="fig2.png.png" alt="Architecture Diagram" width="1000"/>
+</p>
 
+*Figure 2: Subnet configuration showing the subnet name, Availability Zone, VPC CIDR block, and subnet CIDR block.*
 
+#### 1.3  Enabling Auto-Assign Public IP
+Auto-assign Public IP was enabled on the subnet so that instances launched into it automatically receive a public IPv4 address, enabling outbound internet connectivity.
+#### 1.4  Creating and Attaching the Internet Gateway
+An Internet Gateway (UAT-IGW) was created and attached to UAT-VPC. The Internet Gateway allows resources within the public subnet to communicate with the public internet.
+#### 1.5  Adding the Internet Route
+A route was added to the VPC route table with the following configuration:
+* Destination: 0.0.0.0/0 (all internet traffic)
+* Target: UAT-IGW (the Internet Gateway)
+This route ensures that all outbound traffic from the subnet is directed to the Internet Gateway.
+
+<p align="center">
+  <img src="fig3.png.png" alt="Architecture Diagram" width="1000"/>
+</p>
+
+*Figure 3: Route table entry directing all internet-bound traffic (0.0.0.0/0) to the Internet Gateway.*
+#### 1.6  Associating the Route Table with the Public Subnet
+The route table containing the internet route was associated with Public-Subnet-1, completing the public subnet configuration. Instances in this subnet can now route traffic to and from the internet.
+### Step 2: Security Group Configuration
+A security group (UAT-Web-SG) was created to act as a virtual firewall for the EC2 instances. The following inbound rules were configured:
+
+| Type  | Protocol | Port Range | Source                     |
+|-------|-----------|-------------|----------------------------|
+| SSH   | TCP       | 22          | My IP (restricted)         |
+| HTTP  | TCP       | 80          | 0.0.0.0/0 (Anywhere)       |
+| HTTPS | TCP       | 443         | 0.0.0.0/0 (Anywhere)       |
+
+**Note:** SSH access is restricted to "My IP" rather than "Anywhere" (0.0.0.0/0). This is an important security best practice, as it limits SSH access to only the engineer's current IP address and prevents unauthorized remote access attempts from the public internet.
+
+<p align="center">
+  <img src="fig4.png.png" alt="Architecture Diagram" width="1000"/>
+</p>
+
+*Figure 4: Security group inbound rules showing SSH restricted to My IP, with HTTP and HTTPS open to all sources.*
+
+### Step 3: Launching EC2 Instances
+Two EC2 instances were launched into the public subnet using the following configuration:
+* AMI: Amazon Linux 2023
+* Instance type: t3.micro
+
+<p align="center">
+  <img src="fig5.png.png" alt="Architecture Diagram" width="1000"/>
+</p>
+
+*Figure 5: Instance configuration showing the selected AMI (Amazon Linux 2023), instance type (t3.micro), and architecture.*
+
+The following network settings were applied during launch:
+| Resource                | Value            |
+|-------------------------|------------------|
+| VPC                     | UAT-VPC          |
+| Subnet                  | Public-Subnet-1  |
+| Auto-assign Public IP   | Enabled          |
+| Security Group          | UAT-Web-SG       |
+
+<p align="center">
+  <img src="fig6.png.png" alt="Architecture Diagram" width="1000"/>
+</p>
+
+*Figure 6: Network settings applied during EC2 instance launch, including VPC, subnet, public IP assignment, and security group.*
+
+### Step 4: Tagging EC2 Instances
+Resource tagging is the mechanism by which the Lambda function identifies which instances to manage. All instances participating in the automation were tagged with a consistent key-value pair:
+* Key: environment
+* Value: UAT
+Using tags as the selection mechanism makes the solution scalable. Additional instances can be included in or excluded from the automation simply by adding or removing the tag, without any changes to the Lambda code.
+
+<p align="center">
+  <img src="fig7.png.png" alt="Architecture Diagram" width="1000"/>
+</p>
+
+*Figure 7: EC2 instance tags. All instances included in the automation share the same "environment=UAT" tag.*
+
+### Step 5: Creating the IAM Policy
+An IAM policy was created to define the minimum permissions required for the Lambda function to operate. Following the principle of least privilege, the policy grants only the permissions necessary for the automation workflow and no more.
+
+<p align="center">
+  <img src="fig8.png.png" alt="Architecture Diagram" width="1000"/>
+</p>
+
+*Figure 8: IAM policy shown in the policy editor, defining EC2 management and CloudWatch Logs permissions.*
+
+**The Policy**
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "VisualEditor0",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:Start*",
+        "ec2:Stop*",
+        "ec2:DescribeInstanceStatus"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "VisualEditor1",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:CreateLogGroup",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+**Policy Explanation**
+The policy contains two permission statements:
+
+**Statement 1 — EC2 Instance Management (Sid: VisualEditor0):**
+*	ec2:DescribeInstances — Allows the function to list and retrieve details of EC2 instances, which is required to resolve tag filters to instance IDs.
+* ec2:Start* — Permits the function to start EC2 instances.
+* ec2:Stop* — Permits the function to stop EC2 instances.
+* ec2:DescribeInstanceStatus — Allows the function to query the current state of instances for validation and logging purposes.
+
+**Statement 2 — CloudWatch Logs (Sid: VisualEditor1):**
+* logs:CreateLogGroup — Allows Lambda to create a new log group if one does not already exist.
+* logs:CreateLogStream — Allows Lambda to create log streams within the log group.
+* logs:PutLogEvents — Allows Lambda to write log entries, enabling execution activity to be monitored and audited.
+
+**Note:** The Resource field is set to "*" (all resources) for simplicity in this project. In a production environment, this should be scoped down to specific resource ARNs to further restrict access in accordance with the principle of least privilege.
