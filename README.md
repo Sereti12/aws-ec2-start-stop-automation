@@ -37,3 +37,36 @@ A serverless compute service that executes the Python-based automation code in r
 ### IAM Role and IAM Policy
 The IAM role grants the Lambda function a temporary, least-privilege identity to interact with AWS services. The attached IAM policy explicitly defines the permitted actions: describing, starting, and stopping EC2 instances, as well as publishing logs to Amazon CloudWatch.
 
+**The workflow operates as follows:**
+1.	Amazon EventBridge evaluates the configured cron schedule.
+2.	At the designated time, EventBridge invokes the Lambda function and passes a JSON payload specifying the action ("start" or "stop").
+3.	The Lambda function authenticates using its attached IAM role and retrieves EC2 instances matching the configured tag filter.
+4.	The function calls the appropriate EC2 API action on the identified instances.
+5.	Execution logs, including matched instances and action results, are published to Amazon CloudWatch Logs for monitoring and auditability.
+
+## 3. Prerequisites
+Before implementing this solution, ensure the following requirements are met:
+* An active AWS account with access to the AWS Management Console.
+* Basic to intermediate familiarity with core AWS concepts, including VPC, EC2, IAM, Lambda, and EventBridge.
+* A pre-configured VPC with at least one subnet.
+* A minimum of two EC2 instances to participate in the automation.
+* Familiarity with JSON for writing IAM policies and EventBridge event payloads.
+* Basic understanding of Python (for reviewing and customizing the Lambda function).
+
+## 4. Implementation
+### Step 1: Networking — VPC and Subnet Configuration
+#### 1.1  Creating the VPC
+An Amazon VPC was created with the following configuration:
+*	Name tag: UAT-VPC
+*	IPv4 CIDR block: 10.0.0.0/16
+The /16 CIDR block provides up to 65,536 IP addresses, offering sufficient address space for future growth.
+### 1.2  Creating the Subnet
+A public subnet was created within the VPC using the following settings:
+* Subnet name: Public-Subnet-1
+* Availability Zone: Europe (Stockholm) — eu-north-1a
+*	VPC IPv4 CIDR block: 10.0.0.0/16
+*	Subnet IPv4 CIDR block: 10.0.1.0/24
+The /24 subnet provides 256 IP addresses (251 usable), which is appropriate for this workload.
+
+
+
