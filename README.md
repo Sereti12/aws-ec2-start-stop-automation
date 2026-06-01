@@ -59,7 +59,7 @@ Before implementing this solution, ensure the following requirements are met:
 An Amazon VPC was created with the following configuration:
 *	Name tag: UAT-VPC
 *	IPv4 CIDR block: 10.0.0.0/16
-The /16 CIDR block provides up to 65,536 IP addresses, offering sufficient address space for future growth.
+* The /16 CIDR block provides up to 65,536 IP addresses, offering sufficient address space for future growth.
 #### 1.2  Creating the Subnet
 A public subnet was created within the VPC using the following settings:
 * Subnet name: Public-Subnet-1
