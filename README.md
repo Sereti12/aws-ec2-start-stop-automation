@@ -66,7 +66,7 @@ A public subnet was created within the VPC using the following settings:
 * Availability Zone: Europe (Stockholm) — eu-north-1a
 *	VPC IPv4 CIDR block: 10.0.0.0/16
 *	Subnet IPv4 CIDR block: 10.0.1.0/24
-The /24 subnet provides 256 IP addresses (251 usable), which is appropriate for this workload.
+* The /24 subnet provides 256 IP addresses (251 usable), which is appropriate for this workload.
 
 <p align="center">
   <img src="fig2.png.png" alt="Architecture Diagram" width="1000"/>
