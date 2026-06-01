@@ -82,7 +82,7 @@ An Internet Gateway (UAT-IGW) was created and attached to UAT-VPC. The Internet 
 A route was added to the VPC route table with the following configuration:
 * Destination: 0.0.0.0/0 (all internet traffic)
 * Target: UAT-IGW (the Internet Gateway)
-This route ensures that all outbound traffic from the subnet is directed to the Internet Gateway.
+* This route ensures that all outbound traffic from the subnet is directed to the Internet Gateway.
 
 <p align="center">
   <img src="fig3.png.png" alt="Architecture Diagram" width="1000"/>
